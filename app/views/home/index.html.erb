@@ -1,0 +1,245 @@
+<div id="player"></div>
+<script>
+$(function(){
+  // 関連コンテンツ クリック時のイベントのバインド
+  $("#related-list").on("click", ".related-content", function(e) {
+    addContent($(this).data("contentid"), _.unescape($(this).data("title")));
+  });
+
+  // 再生中リスト クリック時のイベントのバインド
+  $("#around-list").on("click", ".around-content", function(e) {
+    show($(this).data("playorder"));
+  });
+
+  // 再生中リスト 削除ボタン
+  $("#around-list").on("click", ".delete", function(e) {
+    destroy($(this).data("playorder"));
+  });
+
+  // URLによるコンテンツ追加処理
+  $("#addByUrl").click(function() {
+    var url = $("#newContentUrl").val();
+    // URL文字列をパースしてIDを抽出
+    var regexp = /[/=]([-\w]{11})/;
+    var content_id = regexp.exec(url)[1]
+
+    // APIからタイトルを取得
+    $.ajax({
+      type: "GET",
+      dataType: "json",
+      url: "http://gdata.youtube.com/feeds/api/videos/" + content_id + "?alt=json",
+      success: function(result) {
+        addContent(content_id, result.entry.title.$t);
+      },
+      error: function(result) {
+        console.log("error add content by url.");
+      }
+    });
+  });
+
+});
+
+var tag = document.createElement('script');
+
+tag.src = "https://www.youtube.com/iframe_api";
+var firstScriptTag = document.getElementsByTagName('script')[0];
+firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+var player;
+var play_order = 0;
+var current_order = 1;
+function onYouTubeIframeAPIReady() {
+  player = new YT.Player('player', {
+    height: '390',
+    width: '640',
+    events: {
+      'onReady': onPlayerReady,
+      'onStateChange': onPlayerStateChange
+    }
+  });
+}
+function onPlayerReady(event) {
+  show(current_order);
+  // updateRelated();
+  // updateAroundList();
+  player.setPlaybackQuality("hd1080");
+}
+
+function onPlayerStateChange(event) {
+  console.log(event.data);
+  switch (event.data) {
+    case YT.PlayerState.ENDED:
+      console.log("end");
+      playNextContent();
+      break;
+  }
+}
+
+function playNextContent() {
+  $.ajax({
+    type: "GET",
+    url: "/next",
+    data: {
+      current_order: current_order
+    },
+    success: playNewContent,
+    error: error
+  });
+}
+
+function playPrevContent() {
+  $.ajax({
+    type: "GET",
+    url: "/prev",
+    data: {
+      current_order: current_order
+    },
+    success: playNewContent,
+    error: error
+  });
+}
+
+function playNewContent(result) {
+  current_order = result.play_order;
+  updateRelated(result.content_id);
+  updateAroundList();
+  player.loadVideoById({
+    videoId: result.content_id
+  });
+}
+
+function error(result) {
+  console.log("error");
+  console.log(result);
+}
+
+
+function show(play_order) {
+  $.ajax({
+    type: "GET",
+    url: "/show",
+    data: {
+      play_order: play_order
+    },
+    dataType: "json",
+    success: playNewContent,
+    error: error
+  });
+}
+
+function reset() {
+  $.ajax({
+    type: "GET",
+    url: "/reset",
+    dataType: "json",
+    success: function(result) {
+      updateRelated();
+      updateAroundList();
+    }
+  });
+}
+
+// プレイリストの最後尾にコンテンツを追加する
+function addContent(content_id, title) {
+  $.ajax({
+    type: "GET",
+    url: "/add",
+    data: {
+      content_id: content_id,
+      title: title
+    },
+    dataType: "json",
+    success: function(result) {
+      updateAroundList();
+    }
+  });
+}
+
+function destroy(play_order) {
+  $.ajax({
+    type: "POST",
+    url: "/destroy/",
+    data: {
+      play_order: play_order
+    },
+    dataType: "json",
+    success: function(result) {
+      updateRelated();
+      updateAroundList();
+    }
+  });
+}
+
+// 関連動画の読み込みと更新
+function updateRelated(video_id) {
+  console.log("update related: " + player.getVideoData().video_id );
+  $.ajax({
+    type: "GET",
+    dataType: "json",
+    url: "http://gdata.youtube.com/feeds/api/videos/" + video_id + "/related?v=2&alt=json",
+    success: function(result) {
+      var html = "";
+      // オブジェクトを作ってみる？
+      for (var i = 0; i < result.feed.entry.length; i++) {
+        var title = _.escape(result.feed.entry[i].title.$t);
+        var videoId = result.feed.entry[i].media$group.yt$videoid.$t ;
+
+        html += "<li class='related-content' data-contentid='" + videoId + "'";
+        html += "data-title='" + title + "'>";
+        html += title;
+        html += "</li>";
+      }
+      $("#related-list").html(html);
+    },
+    error: function(result) {
+      console.log("error update related.");
+    }
+  });
+}
+
+// 再生中のリストを更新する TODO Aroundという名前が微妙
+function updateAroundList() {
+  $.ajax({
+    type: "GET",
+    url: "/around",
+    data: {
+      current_order: current_order
+    },
+    dataType: "json",
+    success: function(result) {
+      // 再生中のプレイリストを書き換え
+      var html = "";
+      for (var i = 0; i < result.length; i++) {
+        html += "<li class=\"around-content\" data-playorder=\"" + result[i].play_order + "\">" + _.escape(result[i].title) + "</li>";
+        html += "<input type=\"button\" class=\"delete\" value=\"delete\"data-playorder=\"" + result[i].play_order + "\" />";
+      }
+      $("#around-list").html(html);
+      setCurrent();
+    }
+  });
+}
+
+// 再生中リストの現在再生中のものにクラスをつける
+function setCurrent() {
+  $("#around-list > li").removeClass("current");
+  $("#around-list > li[data-playorder=\"" + current_order + "\"]").addClass("current");
+}
+</script>
+
+<input type="button" value="next" onclick="playNextContent();">
+<input type="button" value="prev" onclick="playPrevContent();">
+
+<input type="text" id="newContentUrl" value="">
+<input type="button" id="addByUrl" value="add">
+
+<input type="button" value="reset" onclick="reset();">
+
+<div id="around">
+  再生中のリスト
+  <ul id="around-list"></ul>
+</div>
+
+<div id="related">
+  関連コンテンツ
+  <ul id="related-list"></ul>
+</div>

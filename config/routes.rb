@@ -1,4 +1,15 @@
 Rails.application.routes.draw do
+  root 'home#index'
+
+  match '/next', to: 'playlists#next', via: 'get'
+  match '/prev', to: 'playlists#prev', via: 'get'
+  match '/add', to: 'playlists#create', via: 'get'
+  match '/around', to: 'playlists#around', via: 'get'
+  match '/reset', to: 'playlists#reset', via: 'get'
+  match '/show', to: 'playlists#show', via: 'get'
+  match '/destroy', to: 'playlists#destroy', via: 'post'
+  match '/destroy', to: 'playlists#destroy', via: 'get'
+
   # The priority is based upon order of creation: first created -> highest priority.
   # See how all your routes lay out with "rake routes".
 
