@@ -1,6 +1,6 @@
 $(function(){
   // 関連コンテンツ クリック時のイベントのバインド
-  $("#related-list").on("click", ".related-content", function(e) {
+  $("#right").on("click", ".resource-content", function(e) {
     addContent($(this).data("videoid"), $(this).find(".title").text());
   });
 
@@ -33,6 +33,12 @@ $(function(){
         console.log("error add content by url.");
       }
     });
+  });
+
+  // 右サイドバーのタブ切り替え
+  $("form.search-form").submit(function(e) {
+    e.preventDefault();
+    searchByKeyword($(".search-keyword").val());
   });
 
 });
@@ -188,7 +194,7 @@ function updateRelated(video_id) {
     success: function(result) {
       var html = "";
       // オブジェクトを作ってみる？
-      var template = _.template($("#related-content-template").html());
+      var template = _.template($("#resource-content-template").html());
       var target = $("#related-list");
       target.html("");
       for (var i = 0; i < result.feed.entry.length; i++) {
@@ -233,4 +239,32 @@ function updateAroundList() {
 function setCurrent() {
   $("#around-list > li").removeClass("current");
   $("#around-list > li[data-playorder=\"" + current_order + "\"]").addClass("current");
+}
+
+function searchByKeyword(keyword) {
+  $.ajax({
+    type: "GET",
+    dataType: "json",
+    url: "http://gdata.youtube.com/feeds/api/videos?q=" + keyword + "&v=2&alt=json",
+    success: function(result) {
+      var html = "";
+      // オブジェクトを作ってみる？
+      var template = _.template($("#resource-content-template").html());
+      var target = $("#search-list");
+      target.html("");
+      for (var i = 0; i < result.feed.entry.length; i++) {
+        target.append(template({
+          title: result.feed.entry[i].title.$t,
+          video_id: result.feed.entry[i].media$group.yt$videoid.$t,
+          image_url: result.feed.entry[i].media$group.media$thumbnail[0].url,
+        }));
+      }
+
+      $(".search-tab").click();
+
+    },
+    error: function(result) {
+      console.log("error search.");
+    }
+  });
 }
