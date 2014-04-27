@@ -3,8 +3,33 @@
 
 $jpn_green: #90e27f;
 
+html, body { height:100%; margin:0; }
+
+body {
+
+  padding-top: 52px;
+}
+
+nav {
+  margin-top: -52px;
+  margin-bottom: 0;
+}
+
+.container-fluid {
+  height: 92%;
+}
+
+#around {
+
+  height:100%;
+  overflow: scroll;
+
+}
+
 #around-list {
-  padding-left: 5px;
+  padding:0;
+  margin: 0;
+  height:100%;
 
 
   li.around-content {
@@ -23,6 +48,9 @@ $jpn_green: #90e27f;
 
 #right {
 
+  height:100%;
+  // overflow: scroll;
+
   .search-form {
     input, button{
       width:auto;
@@ -35,23 +63,40 @@ $jpn_green: #90e27f;
     clear: both;
   }
 
-  .tab-pane ul {
+  .tab-pane {
+
+    ul {
     padding-left: 0px;
 
-    li {
+      li {
 
-      padding: 5px 0;
-      list-style-type: none;
-      font-size: small;
-      clear: both;
+        padding: 5px 0;
+        list-style-type: none;
+        font-size: small;
+        clear: both;
 
-      img {
-        float: left;
+        img {
+          float: left;
+        }
+
+        p {
+          float: left;
+          width: 150px;
+        }
       }
+    }
+  }
 
-      p {
-        float: left;
-        width: 150px;
+  .tab-content {
+
+    height: 90%;
+    overflow: scroll;
+
+    div {
+      height: 100%;
+
+      ul {
+        height: 100%;
       }
     }
   }

@@ -260,7 +260,7 @@ function searchByKeyword(keyword) {
         }));
       }
 
-      $(".search-tab").click();
+      $(".search-tab a").click();
 
     },
     error: function(result) {
