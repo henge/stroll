@@ -1,4 +1,7 @@
 <div class="container-fluid">
+
+<input type="hidden" value="<%= @current_order %>" id="current_order" />
+
 <div id="around" class="col-md-3">
   <ul id="around-list"></ul>
 </div>
@@ -55,4 +58,7 @@
     <p class="title"><%%- title %></p>
   </li>
 </script>
+
+<%= render 'home_js' %>
+
 </div>

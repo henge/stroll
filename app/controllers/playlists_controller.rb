@@ -57,8 +57,14 @@ class PlaylistsController < ApplicationController
   end
 
   def around
-    respond_to do |format|
-      format.json { render json: Playlist.around(params[:current_order].to_f)}
+    @user = current_user
+    @user.current = params[:current_order].to_f
+    if @user.save
+      respond_to do |format|
+        format.json { render json: Playlist.around(params[:current_order].to_f)}
+      end
+    else
+
     end
   end
 

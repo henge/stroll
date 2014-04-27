@@ -1,5 +1,6 @@
 class HomeController < ApplicationController
   def index
-    @current_order = 1;
+    @user = User.find(current_user.id)
+    @current_order = @user.current;
   end
 end
