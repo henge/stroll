@@ -7,7 +7,7 @@ class PlaylistsController < ApplicationController
   def show
     respond_to do |format|
       format.json do
-        render json: Playlist.find_by(play_order: params[:play_order])
+        render json: Playlist.find_by(user_id: current_user.id, play_order: params[:play_order])
       end
     end
   end
@@ -18,7 +18,7 @@ class PlaylistsController < ApplicationController
     # @playlist = Playlist.find_by(play_order: next_order)
     respond_to do |format|
       format.json do
-        render json: Playlist.next(params[:current_order].to_f)
+        render json: Playlist.next(current_user.id, params[:current_order].to_f)
       end
     end
   end
@@ -26,7 +26,7 @@ class PlaylistsController < ApplicationController
   def prev
     respond_to do |format|
       format.json do
-        render json: Playlist.prev(params[:current_order].to_f)
+        render json: Playlist.prev(current_user.id, params[:current_order].to_f)
       end
     end
   end
@@ -40,7 +40,8 @@ class PlaylistsController < ApplicationController
   # POST /playlists.json
   def create
     @playlist = Playlist.new(playlist_params)
-    @last = Playlist.last
+    @playlist.user = current_user
+    @last = Playlist.last(@playlist.user.id)
     if @last
       @playlist.play_order = @last.play_order + 1
     else
@@ -61,7 +62,7 @@ class PlaylistsController < ApplicationController
     @user.current = params[:current_order].to_f
     if @user.save
       respond_to do |format|
-        format.json { render json: Playlist.around(params[:current_order].to_f)}
+        format.json { render json: Playlist.around(current_user.id)}
       end
     else
 
@@ -69,8 +70,9 @@ class PlaylistsController < ApplicationController
   end
 
   def reset
+
     respond_to do |format|
-      if Playlist.destroy_all
+      if Playlist.around(current_user.id).destroy_all
         format.json { head :no_content }
       else
         format.json { render json: @playlist.errors, status: :unprocessable_entity }
@@ -79,7 +81,7 @@ class PlaylistsController < ApplicationController
   end
 
   def destroy
-    @playlist = Playlist.find_by(play_order: params[:play_order])
+    @playlist = Playlist.find_by(user_id: current_user.id, play_order: params[:play_order])
     if @playlist
       @playlist.destroy
       respond_to do |format|
